@@ -1,0 +1,994 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="bg-gray-100">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gerenciador de Aluguéis</title>
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Inter Font -->
+    <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+        }
+        .hidden {
+            display: none;
+        }
+        /* Custom styles for modal */
+        .modal {
+            background-color: rgba(0, 0, 0, 0.5);
+        }
+    </style>
+</head>
+<body class="bg-gray-100">
+
+    <!-- Main Container -->
+    <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+        <!-- Header -->
+        <header class="flex flex-col sm:flex-row items-center justify-between bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6">
+            <h1 class="text-3xl font-bold text-gray-800 mb-2 sm:mb-0">Gerenciador de Aluguéis</h1>
+            <div id="user-info" class="text-sm text-gray-500 text-center sm:text-right">
+                <p>Status: <span id="auth-status">Carregando...</span></p>
+                <p>ID do Usuário: <span id="user-id" class="font-mono text-xs break-all">...</span></p>
+            </div>
+            <button id="show-profile-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow-md hover:bg-gray-300 transition-colors mt-2 sm:mt-0">Meus Dados</button>
+        </header>
+
+        <!-- Loading Indicator -->
+        <div id="loading" class="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-md text-center">
+            <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+            </svg>
+            <p class="mt-4 text-gray-600">Carregando dados...</p>
+        </div>
+
+        <!-- Main Dashboard View (Imóveis) -->
+        <div id="view-dashboard" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 class="text-2xl font-semibold text-gray-700">Meus Imóveis</h2>
+                <button id="add-rental-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                    + Adicionar Imóvel
+                </button>
+            </div>
+            <div id="rentals-list" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
+                <!-- Rentals will be rendered here -->
+            </div>
+            <p id="no-rentals-message" class="text-center text-gray-500 mt-8 hidden">
+                Nenhum imóvel cadastrado. Clique em "+ Adicionar Imóvel" para começar.
+            </p>
+        </div>
+
+        <!-- Add/Edit Rental Form View -->
+        <div id="view-rental-form" class="hidden bg-white p-6 rounded-lg shadow-md">
+            <h2 id="rental-form-title" class="text-2xl font-semibold text-gray-700 mb-4">Novo Imóvel</h2>
+            <form id="rental-form">
+                <input type="hidden" id="rental-id">
+                <div class="mb-4">
+                    <label for="rental-address" class="block text-gray-700 font-medium mb-1">Endereço</label>
+                    <input type="text" id="rental-address" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="mb-4">
+                    <label for="rental-city" class="block text-gray-700 font-medium mb-1">Cidade</label>
+                    <input type="text" id="rental-city" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="mb-4">
+                    <label for="rental-type" class="block text-gray-700 font-medium mb-1">Tipo de Imóvel</label>
+                    <select id="rental-type" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                        <option value="Casa">Casa</option>
+                        <option value="Apartamento">Apartamento</option>
+                        <option value="Comercial">Comercial</option>
+                    </select>
+                </div>
+                <div class="flex items-center gap-4">
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors">Salvar</button>
+                    <button type="button" id="cancel-rental-btn" class="bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- View Contracts View -->
+        <div id="view-contracts" class="hidden">
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="contracts-title" class="text-2xl font-semibold text-gray-700">Contratos</h2>
+                <button id="add-contract-btn" class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">
+                    + Adicionar Contrato
+                </button>
+            </div>
+            <div id="contracts-list" class="space-y-4">
+                <!-- Contracts will be rendered here -->
+            </div>
+            <p id="no-contracts-message" class="text-center text-gray-500 mt-8 hidden">
+                Nenhum contrato cadastrado para este imóvel. Clique em "+ Adicionar Contrato" para começar.
+            </p>
+            <button id="back-to-dashboard-btn" class="mt-4 bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors">
+                Voltar
+            </button>
+        </div>
+
+        <!-- Add/Edit Contract Form View -->
+        <div id="view-contract-form" class="hidden bg-white p-6 rounded-lg shadow-md">
+            <h2 id="contract-form-title" class="text-2xl font-semibold text-gray-700 mb-4">Novo Contrato</h2>
+            <form id="contract-form">
+                <input type="hidden" id="contract-id">
+                <input type="hidden" id="contract-rental-id">
+                <div class="mb-4">
+                    <label for="contract-tenant" class="block text-gray-700 font-medium mb-1">Nome do Inquilino</label>
+                    <input type="text" id="contract-tenant" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="mb-4">
+                    <label for="contract-tenant-rg" class="block text-gray-700 font-medium mb-1">RG do Inquilino</label>
+                    <input type="text" id="contract-tenant-rg" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="mb-4">
+                    <label for="contract-tenant-cpf" class="block text-gray-700 font-medium mb-1">CPF do Inquilino</label>
+                    <input type="text" id="contract-tenant-cpf" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="mb-4">
+                    <label for="contract-phone" class="block text-gray-700 font-medium mb-1">Telefone do Inquilino (com DDD)</label>
+                    <input type="tel" id="contract-phone" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="mb-4">
+                    <label for="contract-rent" class="block text-gray-700 font-medium mb-1">Valor do Aluguel (R$)</label>
+                    <input type="number" id="contract-rent" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="mb-4">
+                    <label for="contract-start" class="block text-gray-700 font-medium mb-1">Data de Início</label>
+                    <input type="date" id="contract-start" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="mb-4">
+                    <label for="contract-end" class="block text-gray-700 font-medium mb-1">Data de Término</label>
+                    <input type="date" id="contract-end" required class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200">
+                </div>
+                <div class="mb-4">
+                    <label for="contract-terms" class="block text-gray-700 font-medium mb-1">Termos do Contrato</label>
+                    <textarea id="contract-terms" rows="5" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200"></textarea>
+                </div>
+                <div class="mb-4">
+                    <label for="contract-landlord-signature" class="block text-gray-700 font-medium mb-1">Sua Assinatura (Locador)</label>
+                    <input type="text" id="contract-landlord-signature" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" placeholder="Seu nome completo">
+                </div>
+                <div class="flex items-center gap-4">
+                    <button type="submit" class="bg-green-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-green-700 transition-colors">Salvar</button>
+                    <button type="button" id="cancel-contract-btn" class="bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors">Cancelar</button>
+                </div>
+            </form>
+        </div>
+
+        <!-- User Profile View -->
+        <div id="view-profile" class="hidden bg-white p-6 rounded-lg shadow-md">
+            <h2 class="text-2xl font-semibold text-gray-700 mb-4">Meus Dados</h2>
+            <form id="profile-form">
+                <div class="mb-4">
+                    <label for="profile-pix-beneficiary" class="block text-gray-700 font-medium mb-1">Nome do Favorecido (Pix)</label>
+                    <input type="text" id="profile-pix-beneficiary" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" placeholder="Seu nome completo ou nome da empresa">
+                </div>
+                <div class="mb-4">
+                    <label for="profile-pix-key" class="block text-gray-700 font-medium mb-1">Minha Chave Pix</label>
+                    <input type="text" id="profile-pix-key" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" placeholder="Ex: email@exemplo.com ou telefone">
+                </div>
+                <div class="mb-4">
+                    <label for="profile-rg" class="block text-gray-700 font-medium mb-1">Meu RG</label>
+                    <input type="text" id="profile-rg" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" placeholder="Ex: 12.345.678-9">
+                </div>
+                <div class="mb-4">
+                    <label for="profile-cpf" class="block text-gray-700 font-medium mb-1">Meu CPF</label>
+                    <input type="text" id="profile-cpf" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" placeholder="Ex: 123.456.789-00">
+                </div>
+                <div class="mb-4">
+                    <label for="profile-bank" class="block text-gray-700 font-medium mb-1">Nome do Banco</label>
+                    <input type="text" id="profile-bank" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" placeholder="Ex: Banco do Brasil">
+                </div>
+                <div class="mb-4">
+                    <label for="profile-agency" class="block text-gray-700 font-medium mb-1">Agência</label>
+                    <input type="text" id="profile-agency" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" placeholder="Ex: 0001">
+                </div>
+                <div class="mb-4">
+                    <label for="profile-account" class="block text-gray-700 font-medium mb-1">Número da Conta</label>
+                    <input type="text" id="profile-account" class="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring focus:ring-indigo-200" placeholder="Ex: 12345-6">
+                </div>
+                <div class="flex items-center gap-4">
+                    <button type="submit" class="bg-indigo-600 text-white px-4 py-2 rounded-lg shadow-md hover:bg-indigo-700 transition-colors">Salvar Dados</button>
+                    <button type="button" id="cancel-profile-btn" class="bg-gray-400 text-white px-4 py-2 rounded-lg shadow-md hover:bg-gray-500 transition-colors">Voltar</button>
+                </div>
+            </form>
+        </div>
+
+
+        <!-- Modal de Confirmação -->
+        <div id="confirmation-modal" class="modal fixed inset-0 flex items-center justify-center p-4 hidden">
+            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-sm text-center">
+                <p id="modal-message" class="text-lg font-semibold text-gray-700 mb-4">Tem certeza que deseja excluir?</p>
+                <div class="flex justify-center space-x-4">
+                    <button id="modal-confirm-btn" class="bg-red-500 text-white px-4 py-2 rounded-lg hover:bg-red-600 transition-colors">Sim</button>
+                    <button id="modal-cancel-btn" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors">Não</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Payment Info Modal -->
+        <div id="payment-modal" class="modal fixed inset-0 flex items-center justify-center p-4 hidden">
+            <div class="bg-white p-6 rounded-lg shadow-xl w-full max-w-md text-left">
+                <h3 class="text-2xl font-bold mb-4">Informações de Pagamento</h3>
+                <div id="payment-details-container" class="space-y-4">
+                    <div id="payment-id-container" class="hidden">
+                        <label class="block text-gray-700 font-medium">ID da Cobrança</label>
+                        <p id="payment-id" class="font-mono text-xs bg-gray-100 p-2 rounded break-all"></p>
+                    </div>
+                    <div id="pix-key-container" class="hidden">
+                        <label class="block text-gray-700 font-medium">Chave Pix</label>
+                        <div class="flex items-center gap-2 mt-1">
+                            <p id="pix-key" class="font-mono text-sm bg-gray-100 p-2 rounded break-all flex-grow"></p>
+                            <button id="copy-pix-key-btn" class="bg-gray-300 text-gray-800 px-3 py-1 text-xs rounded-lg hover:bg-gray-400 transition-colors">Copiar</button>
+                        </div>
+                    </div>
+                    <div id="beneficiary-info-container" class="hidden">
+                        <label class="block text-gray-700 font-medium mt-2">Nome do Favorecido (Pix)</label>
+                        <p id="pix-beneficiary-name" class="font-mono text-sm bg-gray-100 p-2 rounded break-all"></p>
+                        <label class="block text-gray-700 font-medium mt-2">Vencimento</label>
+                        <p id="payment-due-date" class="font-mono text-sm bg-gray-100 p-2 rounded break-all"></p>
+                    </div>
+                    <div id="bank-container" class="hidden">
+                        <label class="block text-gray-700 font-medium">Dados Bancários</label>
+                        <p id="bank-info" class="font-mono text-sm bg-gray-100 p-2 rounded break-all"></p>
+                    </div>
+                </div>
+                <div class="flex justify-end mt-6">
+                    <button id="close-payment-modal-btn" class="bg-gray-400 text-white px-4 py-2 rounded-lg hover:bg-gray-500 transition-colors">Fechar</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Toast Notification -->
+        <div id="toast-notification" class="fixed bottom-4 right-4 bg-green-500 text-white px-4 py-2 rounded-lg shadow-lg hidden">
+            Notificação de cobrança enviada!
+        </div>
+
+    </div>
+
+    <!-- Firebase Scripts -->
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import { getFirestore, doc, getDoc, addDoc, setDoc, updateDoc, deleteDoc, onSnapshot, collection, query, where, getDocs, orderBy, writeBatch } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // Firebase configuration and app ID are globally provided
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'default-app-id';
+        const firebaseConfig = typeof __firebase_config !== 'undefined' ? JSON.parse(__firebase_config) : {};
+        const initialAuthToken = typeof __initial_auth_token !== 'undefined' ? __initial_auth_token : null;
+
+        document.addEventListener('DOMContentLoaded', () => {
+
+            // --- Firebase Initialization and Auth ---
+            let app, db, auth, userId;
+            let currentRentalId;
+            let currentRentalData;
+            let userProfile = null;
+            
+            try {
+                app = initializeApp(firebaseConfig);
+                db = getFirestore(app);
+                auth = getAuth(app);
+                
+                // Listen for auth state changes
+                onAuthStateChanged(auth, async (user) => {
+                    const loading = document.getElementById('loading');
+                    const authStatus = document.getElementById('auth-status');
+                    const userIdElement = document.getElementById('user-id');
+                    
+                    if (user) {
+                        userId = user.uid;
+                        authStatus.textContent = 'Autenticado';
+                        userIdElement.textContent = userId;
+                        loading.classList.add('hidden');
+                        showView('dashboard');
+                        setupRealtimeListeners();
+                        loadUserProfile();
+                    } else {
+                        if (initialAuthToken) {
+                            await signInWithCustomToken(auth, initialAuthToken);
+                        } else {
+                            await signInAnonymously(auth);
+                        }
+                    }
+                });
+
+            } catch (error) {
+                console.error("Erro ao inicializar o Firebase:", error);
+                document.getElementById('loading').innerHTML = `
+                    <p class="text-red-500">Erro ao carregar o aplicativo. Verifique o console para mais detalhes.</p>
+                `;
+            }
+
+            // --- UI State Management ---
+            const views = {
+                dashboard: document.getElementById('view-dashboard'),
+                rentalForm: document.getElementById('view-rental-form'),
+                contracts: document.getElementById('view-contracts'),
+                contractForm: document.getElementById('view-contract-form'),
+                profile: document.getElementById('view-profile')
+            };
+            const rentalForm = document.getElementById('rental-form');
+            const contractForm = document.getElementById('contract-form');
+            const profileForm = document.getElementById('profile-form');
+            const confirmationModal = document.getElementById('confirmation-modal');
+            const modalConfirmBtn = document.getElementById('modal-confirm-btn');
+            const modalCancelBtn = document.getElementById('modal-cancel-btn');
+            const paymentModal = document.getElementById('payment-modal');
+            const closePaymentModalBtn = document.getElementById('close-payment-modal-btn');
+            const copyPixKeyBtn = document.getElementById('copy-pix-key-btn');
+            
+
+
+            let pendingAction = null;
+
+            function showView(viewName) {
+                Object.values(views).forEach(view => {
+                    if (view) { 
+                        view.classList.add('hidden');
+                    }
+                });
+                const targetView = views[viewName];
+                if (targetView) {
+                    targetView.classList.remove('hidden');
+                } else {
+                    console.error(`View with name '${viewName}' not found.`);
+                }
+            }
+
+            // --- Data Listeners ---
+            function setupRealtimeListeners() {
+                if (!userId) {
+                    console.error("Usuário não autenticado. Não é possível configurar listeners.");
+                    return;
+                }
+
+                const rentalsColRef = collection(db, `artifacts/${appId}/users/${userId}/rentals`);
+                onSnapshot(rentalsColRef, (snapshot) => {
+                    const rentals = [];
+                    snapshot.forEach(doc => {
+                        rentals.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderRentals(rentals);
+                }, (error) => {
+                    console.error("Erro ao ouvir a coleção de aluguéis:", error);
+                });
+
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'myProfile');
+                onSnapshot(profileDocRef, (docSnap) => {
+                    if (docSnap.exists()) {
+                        userProfile = docSnap.data();
+                        document.getElementById('profile-pix-beneficiary').value = userProfile.pixBeneficiary || '';
+                        document.getElementById('profile-pix-key').value = userProfile.pixKey || '';
+                        document.getElementById('profile-rg').value = userProfile.rg || '';
+                        document.getElementById('profile-cpf').value = userProfile.cpf || '';
+                        document.getElementById('profile-bank').value = userProfile.bank || '';
+                        document.getElementById('profile-agency').value = userProfile.agency || '';
+                        document.getElementById('profile-account').value = userProfile.account || '';
+                    } else {
+                        userProfile = null;
+                        document.getElementById('profile-pix-beneficiary').value = '';
+                        document.getElementById('profile-pix-key').value = '';
+                        document.getElementById('profile-rg').value = '';
+                        document.getElementById('profile-cpf').value = '';
+                        document.getElementById('profile-bank').value = '';
+                        document.getElementById('profile-agency').value = '';
+                        document.getElementById('profile-account').value = '';
+                    }
+                }, (error) => {
+                    console.error("Erro ao ouvir o perfil do usuário:", error);
+                });
+            }
+
+            function setupContractsListener(rentalId) {
+                if (!userId) {
+                    console.error("Usuário não autenticado. Não é possível configurar listeners.");
+                    return;
+                }
+
+                const contractsColRef = collection(db, `artifacts/${appId}/users/${userId}/rentals/${rentalId}/contracts`);
+                onSnapshot(contractsColRef, (snapshot) => {
+                    const contracts = [];
+                    snapshot.forEach(doc => {
+                        contracts.push({ id: doc.id, ...doc.data() });
+                    });
+                    renderContracts(contracts);
+                }, (error) => {
+                    console.error("Erro ao ouvir a coleção de contratos:", error);
+                });
+            }
+            
+            // --- Helper Functions ---
+            function isOverdue(endDate) {
+                const today = new Date();
+                const contractEnd = new Date(endDate);
+                today.setHours(0, 0, 0, 0); // Reset time to compare only dates
+                return today > contractEnd;
+            }
+
+            function generateFormattedContract(contractData, rentalData, landlordData) {
+                const termsTemplate = `CONTRATO DE LOCAÇÃO RESIDENCIAL
+
+1.  PARTES DO CONTRATO
+    LOCADOR: ${landlordData.pixBeneficiary || '[Seu Nome Completo]'}, RG: ${landlordData.rg || '[Seu RG]'}, CPF: ${landlordData.cpf || '[Seu CPF]'}, proprietário do imóvel.
+    LOCATÁRIO: ${contractData.tenant || '[Nome do Inquilino]'}, RG: ${contractData.tenantRg || '[RG do Inquilino]'}, CPF: ${contractData.tenantCpf || '[CPF do Inquilino]'}, que aluga o imóvel para fins residenciais.
+
+2.  OBJETO DA LOCAÇÃO
+    IMÓVEL: ${rentalData.address || '[Endereço do Imóvel]'}, ${rentalData.city || '[Cidade]'}.
+
+3.  PRAZO
+    O prazo de locação é de 30 meses, com início em ${contractData.startDate || '[Data de Início]'} e término em ${contractData.endDate || '[Data de Término]'}.
+
+4.  VALOR E REAJUSTE
+    O aluguel mensal é de R$ ${contractData.rent || '[Valor do Aluguel]'}, a ser pago até o dia [dia de vencimento, ex: 5] de cada mês. O valor será reajustado anualmente pelo índice IGP-M ou IPCA.
+
+5.  ENCARGOS
+    O Locatário se responsabiliza pelo pagamento de todas as despesas de consumo (água, luz, gás, internet) e encargos como IPTU e condomínio.
+
+6.  CONDIÇÕES DO IMÓVEL
+    O Locatário declara ter vistoriado o imóvel e o aceita nas condições atuais. Qualquer dano deve ser comunicado imediatamente ao Locador.
+
+7.  MULTAS
+    Atraso no pagamento do aluguel ou rescisão antecipada sujeitará o Locatário a multa de 3 vezes o valor do aluguel.
+
+8.  DISPOSIÇÕES GERAIS
+    Este contrato vincula as partes e seus herdeiros. Fica eleito o foro da Comarca de ${rentalData.city || '[Sua Cidade]'} para dirimir quaisquer dúvidas.
+    
+    E por estarem justos e contratados, assinam o presente em duas vias de igual teor.
+
+    _____________________________________
+    ${contractData.landlordSignature || '[Assinatura do Locador]'}
+    Locador
+
+    _____________________________________
+    ${contractData.tenant || '[Assinatura do Inquilino]'}
+    Locatário`;
+
+                return termsTemplate;
+            }
+
+            // --- UI Rendering Functions ---
+            function renderRentals(rentals) {
+                const list = document.getElementById('rentals-list');
+                list.innerHTML = '';
+                
+                if (rentals.length === 0) {
+                    document.getElementById('no-rentals-message').classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('no-rentals-message').classList.add('hidden');
+
+                rentals.forEach(rental => {
+                    const rentalCard = `
+                        <div class="bg-white p-6 rounded-lg shadow-md flex flex-col gap-2">
+                            <div class="flex-grow">
+                                <h3 class="text-xl font-semibold text-gray-800">${rental.address}</h3>
+                                <p class="text-sm text-gray-500">${rental.city} - ${rental.type}</p>
+                            </div>
+                            <div class="flex flex-col sm:flex-row gap-2 mt-4">
+                                <button data-id="${rental.id}" class="view-contracts-btn bg-blue-500 text-white px-3 py-1 text-sm rounded-lg hover:bg-blue-600 transition-colors flex-1">Ver Contratos</button>
+                                <button data-id="${rental.id}" class="edit-rental-btn bg-yellow-500 text-white px-3 py-1 text-sm rounded-lg hover:bg-yellow-600 transition-colors flex-1">Editar</button>
+                                <button data-id="${rental.id}" class="delete-rental-btn bg-red-500 text-white px-3 py-1 text-sm rounded-lg hover:bg-red-600 transition-colors flex-1">Excluir</button>
+                            </div>
+                        </div>
+                    `;
+                    list.innerHTML += rentalCard;
+                });
+
+                document.querySelectorAll('.view-contracts-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        currentRentalId = e.target.dataset.id;
+                        const rentalDocRef = doc(db, `artifacts/${appId}/users/${userId}/rentals`, currentRentalId);
+                        const docSnap = await getDoc(rentalDocRef);
+                        if (docSnap.exists()) {
+                            currentRentalData = docSnap.data();
+                            document.getElementById('contracts-title').textContent = `Contratos de: ${currentRentalData.address}`;
+                            setupContractsListener(currentRentalId);
+                            showView('contracts');
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.edit-rental-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const rentalId = e.target.dataset.id;
+                        editRental(rentalId);
+                    });
+                });
+
+                document.querySelectorAll('.delete-rental-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const rentalId = e.target.dataset.id;
+                        confirmAction(() => deleteRental(rentalId));
+                    });
+                });
+            }
+
+            function renderContracts(contracts) {
+                const list = document.getElementById('contracts-list');
+                list.innerHTML = '';
+
+                if (contracts.length === 0) {
+                    document.getElementById('no-contracts-message').classList.remove('hidden');
+                    return;
+                }
+                document.getElementById('no-contracts-message').classList.add('hidden');
+
+                contracts.forEach(contract => {
+                    const isContractOverdue = isOverdue(contract.endDate);
+                    const overdueClass = isContractOverdue ? 'border-red-500' : 'border-gray-200';
+                    const paymentInfo = contract.paymentInfo || {};
+                    let paymentInfoHtml = '';
+
+                    if (paymentInfo.pixKey || paymentInfo.bank || paymentInfo.boletoNumber) {
+                        paymentInfoHtml = `<p class="text-sm text-gray-500 mt-2">Pagamento gerado: Informações disponíveis.</p>`;
+                    }
+
+                    const contractTermsHtml = contract.terms ? `<div class="mt-2 text-sm text-gray-700"><strong>Termos:</strong><p class="whitespace-pre-wrap">${contract.terms}</p></div>` : '';
+
+
+                    const contractCard = `
+                        <div class="bg-gray-50 p-6 rounded-lg shadow-sm border ${overdueClass}">
+                            <h4 class="text-lg font-bold text-gray-800">Inquilino: ${contract.tenant}</h4>
+                            <p class="text-sm text-gray-600">Aluguel: R$ ${contract.rent}</p>
+                            <p class="text-sm text-gray-600">Período: ${contract.startDate} a ${contract.endDate}</p>
+                            ${isContractOverdue ? '<p class="text-sm text-red-500 font-bold mt-1">VENCIDO</p>' : ''}
+                            ${contractTermsHtml}
+                            ${paymentInfoHtml}
+                            <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-2 mt-4">
+                                <button data-id="${contract.id}" class="generate-billing-mp-btn bg-green-700 text-white px-3 py-1 text-sm rounded-lg hover:bg-green-800 transition-colors">Gerar Cobrança</button>
+                                <button data-id="${contract.id}" class="send-billing-whatsapp-btn bg-green-500 text-white px-3 py-1 text-sm rounded-lg hover:bg-green-600 transition-colors">Enviar Cobrança (WhatsApp)</button>
+                                <button data-id="${contract.id}" class="send-signature-whatsapp-btn bg-blue-500 text-white px-3 py-1 text-sm rounded-lg hover:bg-blue-600 transition-colors">Enviar Contrato (WhatsApp)</button>
+                                <button data-id="${contract.id}" class="edit-contract-btn bg-yellow-500 text-white px-3 py-1 text-sm rounded-lg hover:bg-yellow-600 transition-colors">Editar</button>
+                                <button data-id="${contract.id}" class="delete-contract-btn bg-red-500 text-white px-3 py-1 text-sm rounded-lg hover:bg-red-600 transition-colors">Excluir</button>
+                            </div>
+                        </div>
+                    `;
+                    list.innerHTML += contractCard;
+                });
+
+                document.querySelectorAll('.generate-billing-mp-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const contractId = e.target.dataset.id;
+                        generateBilling(currentRentalId, contractId);
+                    });
+                });
+
+                document.querySelectorAll('.send-billing-whatsapp-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const contractId = e.target.dataset.id;
+                        const contractDocRef = doc(db, `artifacts/${appId}/users/${userId}/rentals/${currentRentalId}/contracts`, contractId);
+                        const docSnap = await getDoc(contractDocRef);
+                        if (docSnap.exists()) {
+                            sendBillingNotificationViaWhatsApp(docSnap.data());
+                        }
+                    });
+                });
+                
+                document.querySelectorAll('.send-signature-whatsapp-btn').forEach(button => {
+                    button.addEventListener('click', async (e) => {
+                        const contractId = e.target.dataset.id;
+                        const contractDocRef = doc(db, `artifacts/${appId}/users/${userId}/rentals/${currentRentalId}/contracts`, contractId);
+                        const docSnap = await getDoc(contractDocRef);
+                        if (docSnap.exists()) {
+                            sendContractForSignatureViaWhatsApp(docSnap.data());
+                        }
+                    });
+                });
+
+                document.querySelectorAll('.edit-contract-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const contractId = e.target.dataset.id;
+                        editContract(currentRentalId, contractId);
+                    });
+                });
+
+                document.querySelectorAll('.delete-contract-btn').forEach(button => {
+                    button.addEventListener('click', (e) => {
+                        const contractId = e.target.dataset.id;
+                        confirmAction(() => deleteContract(currentRentalId, contractId));
+                    });
+                });
+            }
+            
+            // --- Mercado Pago Simulation Functions ---
+            async function generateBilling(rentalId, contractId) {
+                if (!userProfile || (!userProfile.pixKey && !userProfile.bank)) {
+                    showToast('Por favor, adicione sua chave Pix ou dados bancários em "Meus Dados" antes de gerar uma cobrança.');
+                    return;
+                }
+
+                const contractDocRef = doc(db, `artifacts/${appId}/users/${userId}/rentals/${rentalId}/contracts`, contractId);
+                const docSnap = await getDoc(contractDocRef);
+                if (!docSnap.exists()) {
+                    showToast('Contrato não encontrado!');
+                    return;
+                }
+                
+                const contractData = docSnap.data();
+                
+                const pixBeneficiary = userProfile.pixBeneficiary || null;
+                const pixKey = userProfile.pixKey || null;
+                const bank = userProfile.bank || null;
+                const agency = userProfile.agency || null;
+                const account = userProfile.account || null;
+                const paymentDueDate = contractData.endDate;
+                const paymentId = Math.random().toString(36).substr(2, 9).toUpperCase();
+
+                await updateDoc(contractDocRef, {
+                    paymentInfo: {
+                        paymentId: paymentId,
+                        pixBeneficiary: pixBeneficiary,
+                        pixKey: pixKey,
+                        bank: bank,
+                        agency: agency,
+                        account: account,
+                        paymentDueDate: paymentDueDate
+                    },
+                    lastBillingGenerated: new Date().toISOString()
+                });
+                
+                const paymentIdContainer = document.getElementById('payment-id-container');
+                const pixKeyContainer = document.getElementById('pix-key-container');
+                const beneficiaryInfoContainer = document.getElementById('beneficiary-info-container');
+                const bankContainer = document.getElementById('bank-container');
+                
+                paymentIdContainer.classList.remove('hidden');
+                document.getElementById('payment-id').textContent = paymentId;
+
+                // Reset modal content visibility
+                pixKeyContainer.classList.add('hidden');
+                beneficiaryInfoContainer.classList.add('hidden');
+                bankContainer.classList.add('hidden');
+
+                if (pixKey) {
+                    document.getElementById('pix-key').textContent = pixKey;
+                    pixKeyContainer.classList.remove('hidden');
+                    document.getElementById('pix-beneficiary-name').textContent = pixBeneficiary;
+                    document.getElementById('payment-due-date').textContent = paymentDueDate;
+                    beneficiaryInfoContainer.classList.remove('hidden');
+                }
+
+                if (bank && agency && account) {
+                    document.getElementById('bank-info').textContent = `${bank}, Ag: ${agency}, C/C: ${account}`;
+                    bankContainer.classList.remove('hidden');
+                }
+
+                paymentModal.classList.remove('hidden');
+                showToast('Cobrança gerada com sucesso!');
+            }
+
+            function copyToClipboard(elementId, type) {
+                const element = document.getElementById(elementId);
+                if (!element) {
+                    showToast('Erro ao copiar: elemento não encontrado.');
+                    return;
+                }
+                const text = element.textContent;
+                const textarea = document.createElement('textarea');
+                textarea.value = text;
+                document.body.appendChild(textarea);
+                textarea.select();
+                try {
+                    document.execCommand('copy');
+                    showToast(`${type} copiado com sucesso!`);
+                } catch (err) {
+                    console.error('Falha ao copiar:', err);
+                    showToast('Erro ao copiar.');
+                }
+                document.body.removeChild(textarea);
+            }
+            
+            // --- WhatsApp Integration Functions ---
+            function sendBillingNotificationViaWhatsApp(contractData) {
+                const phone = contractData.phone;
+                if (!phone) {
+                    showToast('Telefone do inquilino não cadastrado.');
+                    return;
+                }
+                let message = `Olá, ${contractData.tenant}! Este é um lembrete amigável sobre o aluguel no valor de R$ ${contractData.rent}, com vencimento em ${contractData.endDate}. Agradecemos a sua atenção!`;
+                
+                if (contractData.paymentInfo) {
+                    const paymentInfo = contractData.paymentInfo;
+                    message += `\n\nDetalhes para pagamento:`;
+                    if (paymentInfo.paymentId) {
+                        message += `\nID da Cobrança: ${paymentInfo.paymentId}`;
+                    }
+                    if (paymentInfo.pixBeneficiary) {
+                        message += `\nNome do Favorecido: ${paymentInfo.pixBeneficiary}`;
+                    }
+                    if (paymentInfo.pixKey) {
+                        message += `\nChave PIX: ${paymentInfo.pixKey}`;
+                    }
+                    if (paymentInfo.bank && paymentInfo.agency && paymentInfo.account) {
+                        message += `\nTransferência Bancária: ${paymentInfo.bank}, Ag: ${paymentInfo.agency}, C/C: ${paymentInfo.account}`;
+                    }
+                }
+                
+                const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+                const contractDocRef = doc(db, `artifacts/${appId}/users/${userId}/rentals/${currentRentalId}/contracts`, contractData.id);
+                updateDoc(contractDocRef, {
+                    lastNotificationSent: new Date().toISOString()
+                });
+                showToast('Notificação de cobrança enviada!');
+            }
+            
+            function sendContractForSignatureViaWhatsApp(contractData) {
+                const phone = contractData.phone;
+                if (!phone) {
+                    showToast('Telefone do inquilino não cadastrado.');
+                    return;
+                }
+                const formattedTerms = generateFormattedContract(contractData, currentRentalData, userProfile);
+                const message = `Olá, ${contractData.tenant}! Segue o contrato para revisão e assinatura:\n\n${formattedTerms}\n\nPor favor, revise e confirme o recebimento e assinatura.`;
+                const whatsappUrl = `https://wa.me/${phone}?text=${encodeURIComponent(message)}`;
+                window.open(whatsappUrl, '_blank');
+                const contractDocRef = doc(db, `artifacts/${appId}/users/${userId}/rentals/${currentRentalId}/contracts`, contractData.id);
+                updateDoc(contractDocRef, {
+                    status: 'Enviado para Assinatura',
+                    sentAt: new Date().toISOString()
+                });
+                showToast('Contrato enviado para assinatura!');
+            }
+
+            function showToast(message) {
+                const toast = document.getElementById('toast-notification');
+                toast.textContent = message;
+                toast.classList.remove('hidden');
+                setTimeout(() => {
+                    toast.classList.add('hidden');
+                }, 3000);
+            }
+
+            // --- Form Submission & CRUD Logic ---
+            rentalForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const rentalId = document.getElementById('rental-id').value;
+                const rentalData = {
+                    address: document.getElementById('rental-address').value,
+                    city: document.getElementById('rental-city').value,
+                    type: document.getElementById('rental-type').value
+                };
+
+                const rentalsColRef = collection(db, `artifacts/${appId}/users/${userId}/rentals`);
+
+                try {
+                    if (rentalId) {
+                        await setDoc(doc(rentalsColRef, rentalId), rentalData);
+                    } else {
+                        await addDoc(rentalsColRef, rentalData);
+                    }
+                    showView('dashboard');
+                } catch (error) {
+                    console.error("Erro ao salvar o imóvel:", error);
+                }
+            });
+
+            contractForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const contractId = document.getElementById('contract-id').value;
+                const rentalId = document.getElementById('contract-rental-id').value;
+                const contractData = {
+                    tenant: document.getElementById('contract-tenant').value,
+                    tenantRg: document.getElementById('contract-tenant-rg').value,
+                    tenantCpf: document.getElementById('contract-tenant-cpf').value,
+                    phone: document.getElementById('contract-phone').value,
+                    rent: parseFloat(document.getElementById('contract-rent').value),
+                    startDate: document.getElementById('contract-start').value,
+                    endDate: document.getElementById('contract-end').value,
+                    terms: document.getElementById('contract-terms').value || '',
+                    landlordSignature: document.getElementById('contract-landlord-signature').value || '',
+                    status: 'Em Edição',
+                    lastNotificationSent: null,
+                    paymentInfo: null
+                };
+
+                const contractsColRef = collection(db, `artifacts/${appId}/users/${userId}/rentals/${rentalId}/contracts`);
+
+                try {
+                    if (contractId) {
+                        await setDoc(doc(contractsColRef, contractId), contractData, { merge: true });
+                    } else {
+                        await addDoc(contractsColRef, contractData);
+                    }
+                    showView('contracts');
+                } catch (error) {
+                    console.error("Erro ao salvar o contrato:", error);
+                }
+            });
+
+            profileForm.addEventListener('submit', async (e) => {
+                e.preventDefault();
+                const pixBeneficiary = document.getElementById('profile-pix-beneficiary').value;
+                const pixKey = document.getElementById('profile-pix-key').value;
+                const rg = document.getElementById('profile-rg').value;
+                const cpf = document.getElementById('profile-cpf').value;
+                const bank = document.getElementById('profile-bank').value;
+                const agency = document.getElementById('profile-agency').value;
+                const account = document.getElementById('profile-account').value;
+
+                if (!pixKey && !bank) {
+                    showToast('Por favor, insira sua chave Pix ou os dados bancários.');
+                    return;
+                }
+
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'myProfile');
+                try {
+                    await setDoc(profileDocRef, { pixBeneficiary, pixKey, rg, cpf, bank, agency, account });
+                    showToast('Dados salvos com sucesso!');
+                    showView('dashboard');
+                } catch (error) {
+                    console.error("Erro ao salvar os dados do perfil:", error);
+                    showToast('Erro ao salvar os dados.');
+                }
+            });
+
+            async function loadUserProfile() {
+                const profileDocRef = doc(db, `artifacts/${appId}/users/${userId}/profile`, 'myProfile');
+                const docSnap = await getDoc(profileDocRef);
+                if (docSnap.exists()) {
+                    userProfile = docSnap.data();
+                    document.getElementById('profile-pix-beneficiary').value = userProfile.pixBeneficiary || '';
+                    document.getElementById('profile-pix-key').value = userProfile.pixKey || '';
+                    document.getElementById('profile-rg').value = userProfile.rg || '';
+                    document.getElementById('profile-cpf').value = userProfile.cpf || '';
+                    document.getElementById('profile-bank').value = userProfile.bank || '';
+                    document.getElementById('profile-agency').value = userProfile.agency || '';
+                    document.getElementById('profile-account').value = userProfile.account || '';
+                }
+            }
+
+            async function editRental(rentalId) {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/rentals`, rentalId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const rentalData = docSnap.data();
+                    document.getElementById('rental-form-title').textContent = 'Editar Imóvel';
+                    document.getElementById('rental-id').value = rentalId;
+                    document.getElementById('rental-address').value = rentalData.address;
+                    document.getElementById('rental-city').value = rentalData.city;
+                    document.getElementById('rental-type').value = rentalData.type;
+                    showView('rentalForm');
+                } else {
+                    console.error("Imóvel não encontrado!");
+                }
+            }
+
+            async function deleteRental(rentalId) {
+                const rentalDocRef = doc(db, `artifacts/${appId}/users/${userId}/rentals`, rentalId);
+                const contractsColRef = collection(db, `artifacts/${appId}/users/${userId}/rentals/${rentalId}/contracts`);
+                
+                try {
+                    const contractsSnapshot = await getDocs(contractsColRef);
+                    const batch = writeBatch(db);
+                    contractsSnapshot.forEach((contractDoc) => {
+                        batch.delete(contractDoc.ref);
+                    });
+                    await batch.commit();
+
+                    await deleteDoc(rentalDocRef);
+                    console.log("Imóvel e contratos associados excluídos com sucesso!");
+                    showView('dashboard');
+                } catch (error) {
+                    console.error("Erro ao excluir o imóvel:", error);
+                }
+            }
+
+            async function editContract(rentalId, contractId) {
+                const docRef = doc(db, `artifacts/${appId}/users/${userId}/rentals/${rentalId}/contracts`, contractId);
+                const docSnap = await getDoc(docRef);
+                if (docSnap.exists()) {
+                    const contractData = docSnap.data();
+                    document.getElementById('contract-form-title').textContent = 'Editar Contrato';
+                    document.getElementById('contract-id').value = contractId;
+                    document.getElementById('contract-rental-id').value = rentalId;
+                    document.getElementById('contract-tenant').value = contractData.tenant;
+                    document.getElementById('contract-tenant-rg').value = contractData.tenantRg || '';
+                    document.getElementById('contract-tenant-cpf').value = contractData.tenantCpf || '';
+                    document.getElementById('contract-phone').value = contractData.phone;
+                    document.getElementById('contract-rent').value = contractData.rent;
+                    document.getElementById('contract-start').value = contractData.startDate;
+                    document.getElementById('contract-end').value = contractData.endDate;
+                    document.getElementById('contract-terms').value = contractData.terms || '';
+                    document.getElementById('contract-landlord-signature').value = contractData.landlordSignature || '';
+                    showView('contractForm');
+                } else {
+                    console.error("Contrato não encontrado!");
+                }
+            }
+
+            async function deleteContract(rentalId, contractId) {
+                try {
+                    const docRef = doc(db, `artifacts/${appId}/users/${userId}/rentals/${rentalId}/contracts`, contractId);
+                    await deleteDoc(docRef);
+                    console.log("Contrato excluído com sucesso!");
+                    showView('contracts');
+                } catch (error) {
+                    console.error("Erro ao excluir o contrato:", error);
+                }
+            }
+            
+            // --- Event Listeners for UI Navigation ---
+            document.getElementById('add-rental-btn').addEventListener('click', () => {
+                rentalForm.reset();
+                document.getElementById('rental-id').value = '';
+                document.getElementById('rental-form-title').textContent = 'Novo Imóvel';
+                showView('rentalForm');
+            });
+
+            document.getElementById('cancel-rental-btn').addEventListener('click', () => {
+                showView('dashboard');
+            });
+
+            document.getElementById('add-contract-btn').addEventListener('click', () => {
+                contractForm.reset();
+                document.getElementById('contract-id').value = '';
+                document.getElementById('contract-rental-id').value = currentRentalId;
+                document.getElementById('contract-form-title').textContent = 'Novo Contrato';
+                
+                // Prefill with a placeholder
+                const placeholderData = {
+                    tenant: '[Nome do Inquilino]',
+                    tenantRg: '[RG do Inquilino]',
+                    tenantCpf: '[CPF do Inquilino]',
+                    phone: '[Telefone do Inquilino]',
+                    rent: '[Valor do Aluguel]',
+                    startDate: '[Data de Início]',
+                    endDate: '[Data de Término]',
+                    landlordSignature: '[Seu Nome Completo]'
+                };
+                document.getElementById('contract-terms').value = generateFormattedContract(placeholderData, currentRentalData, userProfile);
+                document.getElementById('contract-landlord-signature').value = userProfile.pixBeneficiary || '';
+
+                showView('contractForm');
+            });
+
+            document.getElementById('cancel-contract-btn').addEventListener('click', () => {
+                showView('contracts');
+            });
+
+            document.getElementById('back-to-dashboard-btn').addEventListener('click', () => {
+                showView('dashboard');
+            });
+
+            document.getElementById('show-profile-btn').addEventListener('click', () => {
+                showView('profile');
+            });
+
+            document.getElementById('cancel-profile-btn').addEventListener('click', () => {
+                showView('dashboard');
+            });
+            
+            closePaymentModalBtn.addEventListener('click', () => {
+                paymentModal.classList.add('hidden');
+            });
+
+            copyPixKeyBtn.addEventListener('click', () => {
+                copyToClipboard('pix-key', 'Chave Pix');
+            });
+            
+
+            // --- Confirmation Modal Logic ---
+            function confirmAction(callback) {
+                pendingAction = callback;
+                confirmationModal.classList.remove('hidden');
+            }
+
+            modalConfirmBtn.addEventListener('click', () => {
+                if (pendingAction) {
+                    pendingAction();
+                }
+                confirmationModal.classList.add('hidden');
+                pendingAction = null;
+            });
+
+            modalCancelBtn.addEventListener('click', () => {
+                confirmationModal.classList.add('hidden');
+                pendingAction = null;
+            });
+        });
+    </script>
+</body>
+</html>
