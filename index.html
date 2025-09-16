@@ -410,40 +410,41 @@
             function generateFormattedContract(contractData, rentalData, landlordData) {
                 const termsTemplate = `CONTRATO DE LOCAÇÃO RESIDENCIAL
 
-1.  PARTES DO CONTRATO
-    LOCADOR: ${landlordData.pixBeneficiary || '[Seu Nome Completo]'}, RG: ${landlordData.rg || '[Seu RG]'}, CPF: ${landlordData.cpf || '[Seu CPF]'}, proprietário do imóvel.
-    LOCATÁRIO: ${contractData.tenant || '[Nome do Inquilino]'}, RG: ${contractData.tenantRg || '[RG do Inquilino]'}, CPF: ${contractData.tenantCpf || '[CPF do Inquilino]'}, que aluga o imóvel para fins residenciais.
+PARTES DO CONTRATO:
+LOCADOR: ${landlordData.pixBeneficiary || '[Seu Nome Completo]'}, portador(a) do RG nº ${landlordData.rg || '[Seu RG]'} e CPF nº ${landlordData.cpf || '[Seu CPF]'}.
+LOCATÁRIO: ${contractData.tenant || '[Nome do Inquilino]'}, portador(a) do RG nº ${contractData.tenantRg || '[RG do Inquilino]'} e CPF nº ${contractData.tenantCpf || '[CPF do Inquilino]'}.
 
-2.  OBJETO DA LOCAÇÃO
-    IMÓVEL: ${rentalData.address || '[Endereço do Imóvel]'}, ${rentalData.city || '[Cidade]'}.
+CLÁUSULA PRIMEIRA – DO OBJETO DA LOCAÇÃO
+O presente contrato tem como objeto a locação do imóvel residencial situado na ${rentalData.address || '[Endereço do Imóvel]'}, na cidade de ${rentalData.city || '[Cidade]'}, nas condições em que se encontra e conforme termo de vistoria anexo.
 
-3.  PRAZO
-    O prazo de locação é de 30 meses, com início em ${contractData.startDate || '[Data de Início]'} e término em ${contractData.endDate || '[Data de Término]'}.
+CLÁUSULA SEGUNDA – DO PRAZO DE VIGÊNCIA
+A locação terá vigência por 30 (trinta) meses, iniciando-se em ${contractData.startDate || '[Data de Início]'} e com término em ${contractData.endDate || '[Data de Término]'}.
 
-4.  VALOR E REAJUSTE
-    O aluguel mensal é de R$ ${contractData.rent || '[Valor do Aluguel]'}, a ser pago até o dia [dia de vencimento, ex: 5] de cada mês. O valor será reajustado anualmente pelo índice IGP-M ou IPCA.
+CLÁUSULA TERCEIRA – DO VALOR DO ALUGUEL
+O valor mensal do aluguel é de R$ ${contractData.rent || '[Valor do Aluguel]'}, a ser pago até o dia [dia de vencimento] de cada mês. O reajuste anual será feito com base na variação do IGP-M ou outro índice legal que o substitua.
 
-5.  ENCARGOS
-    O Locatário se responsabiliza pelo pagamento de todas as despesas de consumo (água, luz, gás, internet) e encargos como IPTU e condomínio.
+CLÁUSULA QUARTA – DAS OBRIGAÇÕES
+O Locatário se obriga a:
+a) Pagar pontualmente o aluguel e os encargos da locação.
+b) Zelar pela conservação do imóvel.
+c) Pagar as despesas de consumo (água, luz, internet, etc.).
+d) Não sublocar o imóvel sem consentimento do Locador.
 
-6.  CONDIÇÕES DO IMÓVEL
-    O Locatário declara ter vistoriado o imóvel e o aceita nas condições atuais. Qualquer dano deve ser comunicado imediatamente ao Locador.
+CLÁUSULA QUINTA – DA MULTA E RESCISÃO
+O descumprimento de qualquer cláusula sujeitará a parte infratora ao pagamento de multa de 3 (três) vezes o valor do aluguel, sem prejuízo da rescisão do contrato.
 
-7.  MULTAS
-    Atraso no pagamento do aluguel ou rescisão antecipada sujeitará o Locatário a multa de 3 vezes o valor do aluguel.
+CLÁUSULA SEXTA – DA VISTORIA
+O Locatário declara ter recebido o imóvel em perfeitas condições, conforme Laudo de Vistoria, que é parte integrante deste contrato.
 
-8.  DISPOSIÇÕES GERAIS
-    Este contrato vincula as partes e seus herdeiros. Fica eleito o foro da Comarca de ${rentalData.city || '[Sua Cidade]'} para dirimir quaisquer dúvidas.
-    
-    E por estarem justos e contratados, assinam o presente em duas vias de igual teor.
+E por estarem justos e contratados, assinam o presente em duas vias de igual teor e forma.
 
-    _____________________________________
-    ${contractData.landlordSignature || '[Assinatura do Locador]'}
-    Locador
+_____________________________________
+${contractData.landlordSignature || '[Assinatura do Locador]'}
+Locador
 
-    _____________________________________
-    ${contractData.tenant || '[Assinatura do Inquilino]'}
-    Locatário`;
+_____________________________________
+${contractData.tenant || '[Assinatura do Inquilino]'}
+Locatário`;
 
                 return termsTemplate;
             }
@@ -992,4 +993,3 @@
     </script>
 </body>
 </html>
-
