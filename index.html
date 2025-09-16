@@ -9,51 +9,100 @@
     <!-- Inter Font -->
     <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap">
     <style>
-        body {
-            font-family: 'Inter', sans-serif;
-        }
-        .hidden {
-            display: none;
-        }
-        /* Custom styles for modal */
-        .modal {
-            background-color: rgba(0, 0, 0, 0.5);
-        }
+        body { font-family: 'Inter', sans-serif; }
+        .hidden { display: none; }
+        .modal { background-color: rgba(0, 0, 0, 0.5); }
     </style>
 </head>
 <body class="bg-gray-100">
 
-    <!-- Main Container -->
-    <div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
-        <!-- Header -->
-        <header class="flex flex-col sm:flex-row items-center justify-between bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6">
-            <h1 class="text-3xl font-bold text-gray-800 mb-2 sm:mb-0">Gerenciador de Aluguéis</h1>
-            <div id="user-info" class="text-sm text-gray-500 text-center sm:text-right">
-                <p>Status: <span id="auth-status">Online</span></p>
-                <p>ID do Usuário: <span id="user-id" class="font-mono text-xs break-all">123456</span></p>
-            </div>
-            <button id="show-profile-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow-md hover:bg-gray-300 transition-colors mt-2 sm:mt-0">Meus Dados</button>
-        </header>
+<div id="app" class="max-w-4xl mx-auto p-4 sm:p-6 lg:p-8">
+    <!-- Header -->
+    <header class="flex flex-col sm:flex-row items-center justify-between bg-white p-4 sm:p-6 rounded-lg shadow-md mb-6">
+        <h1 class="text-3xl font-bold text-gray-800 mb-2 sm:mb-0">Gerenciador de Aluguéis</h1>
+        <div id="user-info" class="text-sm text-gray-500 text-center sm:text-right">
+            <p>Status: <span id="auth-status">Carregando...</span></p>
+            <p>ID do Usuário: <span id="user-id" class="font-mono text-xs break-all">...</span></p>
+        </div>
+        <button id="show-profile-btn" class="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg shadow-md hover:bg-gray-300 transition-colors mt-2 sm:mt-0">Meus Dados</button>
+    </header>
 
-        <!-- Loading Indicator (simulado) -->
-        <div id="loading" class="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-md text-center">
-            <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
-                <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p class="mt-4 text-gray-700">Carregando conteúdo...</p>
+    <!-- Loading Indicator -->
+    <div id="loading" class="flex flex-col items-center justify-center p-8 bg-white rounded-lg shadow-md text-center">
+        <svg class="animate-spin -ml-1 mr-3 h-8 w-8 text-indigo-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+        </svg>
+        <p class="mt-4 text-gray-700">Carregando conteúdo...</p>
+    </div>
+
+    <!-- Main Content -->
+    <div id="content" class="hidden">
+        <div class="bg-white p-6 rounded-lg shadow-md mb-6">
+            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Lista de Aluguéis</h2>
+            <ul id="rental-list" class="list-disc list-inside text-gray-700"></ul>
         </div>
 
-        <!-- Example Content -->
-        <div class="bg-white p-6 rounded-lg shadow-md mt-6">
-            <h2 class="text-2xl font-semibold text-gray-800 mb-4">Lista de Aluguéis</h2>
-            <ul class="list-disc list-inside text-gray-700">
-                <li>Apartamento 101 - R$ 1.200,00</li>
-                <li>Casa 23 - R$ 2.500,00</li>
-                <li>Kitnet 5 - R$ 900,00</li>
-            </ul>
+        <!-- Profile Modal -->
+        <div id="profile-modal" class="hidden fixed inset-0 flex items-center justify-center z-50">
+            <div class="bg-white p-6 rounded-lg shadow-lg max-w-sm w-full">
+                <h3 class="text-xl font-bold mb-4">Meus Dados</h3>
+                <p>Nome: <span id="profile-name"></span></p>
+                <p>Email: <span id="profile-email"></span></p>
+                <p>Telefone: <span id="profile-phone"></span></p>
+                <button id="close-profile" class="mt-4 bg-gray-200 px-4 py-2 rounded-lg hover:bg-gray-300">Fechar</button>
+            </div>
         </div>
     </div>
+</div>
+
+<script>
+    // Simular dados do usuário
+    const user = {
+        status: "Online",
+        id: "123456",
+        name: "Edson Pereira",
+        email: "edson@example.com",
+        phone: "+55 11 96479-2220"
+    };
+
+    // Simular lista de aluguéis
+    const rentals = [
+        { name: "Apartamento 101", price: "R$ 1.200,00" },
+        { name: "Casa 23", price: "R$ 2.500,00" },
+        { name: "Kitnet 5", price: "R$ 900,00" },
+    ];
+
+    // Preencher dados do usuário
+    document.getElementById("auth-status").textContent = user.status;
+    document.getElementById("user-id").textContent = user.id;
+
+    // Preencher lista de aluguéis
+    const rentalList = document.getElementById("rental-list");
+    rentals.forEach(r => {
+        const li = document.createElement("li");
+        li.textContent = `${r.name} - ${r.price}`;
+        rentalList.appendChild(li);
+    });
+
+    // Simular carregamento
+    setTimeout(() => {
+        document.getElementById("loading").classList.add("hidden");
+        document.getElementById("content").classList.remove("hidden");
+    }, 1000);
+
+    // Modal do perfil
+    const modal = document.getElementById("profile-modal");
+    document.getElementById("show-profile-btn").addEventListener("click", () => {
+        document.getElementById("profile-name").textContent = user.name;
+        document.getElementById("profile-email").textContent = user.email;
+        document.getElementById("profile-phone").textContent = user.phone;
+        modal.classList.remove("hidden");
+    });
+    document.getElementById("close-profile").addEventListener("click", () => {
+        modal.classList.add("hidden");
+    });
+</script>
 
 </body>
 </html>
